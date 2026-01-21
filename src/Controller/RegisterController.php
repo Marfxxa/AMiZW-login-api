@@ -31,24 +31,29 @@ final class RegisterController
         $plainPassword = $data['password'] ?? null;
 
         // Ocena 2: minimum walidacja (czy pola są)
-
+if (!is_string($email) || !is_string($plainPassword)) {
+    return new JsonResponse('error' =>'email i password sa wymagane',Response::HTTP_BAD_REQUEST);
+}
         // TODO (ocena 4): jeśli hasło < 8 znaków -> 422
-
+if(md_strlen($plainPassword) < 8) {
+    return new JsonResponse('error' => 'haslo musi miec minimum 8 znakow', 422);}
         $user = new User();
         $user->setEmail($email);
         $user->setPassword($hasher->hashPassword($user, $plainPassword));
         $user->setRoles(['ROLE_USER']);
 
         // Ocena 4: walidacje encji (email format, unique entity)
-//        if (count($errors) > 0) {
-//            return new JsonResponse(['error' => (string) $errors[0]->getMessage()], Response::HTTP_UNPROCESSABLE_ENTITY);
-//        }
+        $errors = $validator->validate($user);
+       if (count($errors) > 0) {
+          return new JsonResponse(['error' => (string) $errors[0]->getMessage()], Response::HTTP_UNPROCESSABLE_ENTITY);
+       }
 
         try {
             $em->persist($user);
             $em->flush();
         } catch (\Throwable $e) {
             // TODO (ocena 4): duplicate email -> 409
+            return new JsonResponse(['error'=>'email jest juz zajety'], 409);_
 
         }
 
